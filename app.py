@@ -4,6 +4,7 @@ import torchvision
 import torchvision.transforms as T
 from PIL import Image
 import io
+from rembg import remove
 
 app = Flask(__name__)
 
@@ -30,9 +31,27 @@ def remove_background(image):
 
 @app.route('/')
 def upload_form():
-    return render_template('upload.html')
+    return render_template('remove-w-rembg.html')
 
-@app.route('/upload', methods=['POST'])
+@app.route('/remove-w-rembg', methods=['POST'])
+def upload_image_rembg():
+    if 'file' not in request.files:
+        return 'No file part', 400
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file', 400
+    if file:
+        input_image = Image.open(file.stream).convert("RGBA")
+        output_image = remove(input_image)
+        
+        img_io = io.BytesIO()
+        output_image.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        return send_file(img_io, mimetype='image/png')
+
+
+@app.route('/remove-w-torch', methods=['POST'])
 def upload_image():
     if 'file' not in request.files:
         return 'No file part'
